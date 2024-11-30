@@ -1,15 +1,33 @@
----
-title: Wrangler
-pcx_content_type: navigation
-sidebar:
-  order: 15
-head:
-  - tag: title
-    content: Wrangler
----
+export default {
+  async fetch(request) {
+    if (request.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405 });
+    }
 
-import { DirectoryListing } from "~/components";
+    const { recipient_email, sender_email, sender_name, subject, message } = await request.json();
 
-Wrangler, the Cloudflare Developer Platform command-line interface (CLI), allows you to manage Worker projects.
+    const mailData = {
+      personalizations: [
+        {
+          to: [{ email: recipient_email }],
+        },
+      ],
+      from: { email: sender_email, name: sender_name },
+      subject: subject,
+      content: [
+        {
+          type: 'text/plain',
+          value: message,
+        },
+      ],
+    };
 
-<DirectoryListing descriptions />
+    const response = await fetch('https://api.mailchannels.net/tx/v1/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mailData),
+    });
+
+    return new Response('Email sent', { status: response.status });
+  },
+};
